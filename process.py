@@ -38,36 +38,49 @@ def to_sorted_array(dict):
   return arr
 
 
-def to_color_map(dict):
+def to_color_map(dict, initial=None):
+  if not initial:
+    initial = {}
   i = 0
-  result = {}
+  result = initial
   for obj in to_sorted_array(dict):
-    key = "@color" + `i`
-    result[key] = obj['color']
-    i += 1
+    if not obj['color'] in result:
+      key = "@color" + `i`
+      result[obj['color']] = key
+      i += 1
   return result
 
 
 def convert_file(file, newfile):
   dict = to_dict(file)
-  color_map = to_color_map(dict)
+  initial_color_map = {}
+
+  with open(file.replace('.less','_header.less')) as header:
+    for line in header:
+      split = line.split(':')
+      color = split[1].split(';')[0].strip()
+      variable = split[0].strip()
+      initial_color_map[color] = variable
+
+  color_map = to_color_map(dict, initial_color_map)
 
   open(newfile, 'w').close()
 
   with open(newfile, 'a') as converted:
-    for variable, color in color_map.iteritems():
+    for color, variable in color_map.iteritems():
       converted.write(variable + ": " + color + ";\n")
 
   with open(newfile, 'a') as converted:
-      converted.write("\n")
+    converted.write("\n")
 
   with open(file) as original:
     with open(newfile, 'a') as converted:
       lines = original.readlines()
       for i, line in enumerate(lines):
-        for variable, color in color_map.iteritems():
+        for color, variable in color_map.iteritems():
           if color in line:
             line = line.replace(color, variable)
         converted.write(line)
+
 
 convert_file('temp.less', 'temp-converted.less')
